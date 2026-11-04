@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Green Eye - The Serpent God</title>
+<style>
+body{margin:0;background:#000;color:#8f8;font-family:monospace;display:flex;flex-direction:column;align-items:center}
+</style>
+</head>
+<body>
+<h1>👁️ GREEN EYE - The Serpent God 🐍</h1>
+<canvas id="c" width="800" height="500"></canvas>
+<div>WASD/arrows: move | left/right: turn | SPACE: attack | E: interact</div>
+<script>
+const IMG={},D={zack:"img/zack.png",ferfi:"img/fertozett_ferfi.png",no:"img/fertozett_no.png",
+hullo:"img/hullo.png",szobor:"img/kigyo_szobor.png",fedlap:"img/fedlap.png",fal:"img/fal.png",padlo:"img/padlo.png"};
+for(const k in D){const i=new Image();i.src=D[k];IMG[k]=i;}
+const ok=im=>im&&im.complete&&im.naturalWidth>0;
+
+const M=[[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+[1,0,0,0,0,1,0,0,0,0,0,0,0,0,0,1],
+[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+[1,0,0,0,0,1,0,0,0,0,0,0,0,0,0,1],
+[1,0,0,0,0,1,0,0,0,0,0,0,1,0,0,1],
+[1,0,0,0,0,1,0,0,0,0,0,0,1,0,0,1],
+[1,0,0,0,0,1,0,0,0,0,0,0,1,0,0,1],
+[1,0,0,0,0,1,0,0,0,0,0,0,1,0,0,1],
+[1,0,0,0,0,1,0,0,0,0,0,0,1,0,0,1],
+[1,0,0,0,2,0,0,0,0,0,0,1,0,0,0,1],
+[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]];
+const MW=16,MH=11,TS=64;
+
+let state="title",P={x:1.5*TS,y:1.5*TS,a:0,hp:100},E=[],msg="",msgT=0,keys={},cd=0;
+const cv=document.getElementById("c"),ctx=cv.getContext("2d");
+function say(t,ms=2500){msg=t;msgT=performance.now()+ms;}
+function tile(x,y){const tx=x/TS|0,ty=y/TS|0;return(tx<0||ty<0||tx>=MW||ty>=MH)?1:M[ty][tx];}
+function free(x,y){const r=10;return!tile(x-r,y-r)&&!tile(x+r,y-r)&&!tile(x-r,y+r)&&!tile(x+r,y+r);}
+
+function spawn(t,x,y){const e={t,x:x*TS+TS/2,y:y*TS+TS/2,hp:3,dmg:10,sp:0.8,g:Math.random()<0.5};
+if(t=="serpent"){e.hp=6;e.dmg=20;e.sp=1.3;}E.push(e);}
+function eimg(e){if(e.t=="serpent")return IMG.hullo;return e.g?IMG.ferfi:IMG.no;}
+function ecol(e){return e.t=="serpent"?"#2a5":(e.g?"#8a8":"#9c9");}
+
+function start(){E=[];P={x:1.5*TS,y:1.5*TS,a:0,hp:100};
+spawn("inf",5,5);spawn("inf",12,7);spawn("inf",3,7);spawn("serpent",13,3);spawn("serpent",7,9);
+say("Simon: 'Zack, meet me at the statue! Careful... you are not alone...'",5000);}
+
+addEventListener("keydown",e=>{keys[e.code]=true;
+if(e.code=="Space"){attack();e.preventDefault();}
+if(state=="title"&&e.code=="Enter")state="menu";
+else if(state=="menu"&&e.code=="Enter"){start();state="game";}
+else if((state=="death"||state=="victory")&&e.code=="Enter")state="menu";
+if(e.code=="KeyE"&&state=="game"){
+const d=Math.hypot(P.x-4.5*TS,P.y-9.5*TS);
+if(d<TS*2)say("👁️ The Eye of the Serpent stares back... It is the master of your fate! 🐍",4000);
+else say("Simon (from afar): 'Head to the statue! Follow the corridor!'",3000);}});
+addEventListener("keyup",e=>keys[e.code]=false);
+
+function attack(){if(state!="game"||cd>0)return;cd=500;
+for(const e of E){const d=Math.hypot(e.x-P.x,e.y-P.y);
+if(d<TS*1.2){let a=Math.atan2(e.y-P.y,e.x-P.x)-P.a;
+while(a>Math.PI)a-=2*Math.PI;while(a<-Math.PI)a+=2*Math.PI;
+if(Math.abs(a)<0.7){e.hp-=2;say("The green light flashes! 👁️",900);}}}
+E=E.filter(e=>e.hp>0);if(E.length==0)state="victory";}
+
+function ray(a){const dx=Math.cos(a),dy=Math.sin(a);let d=0;
+while(d<20*TS){d+=2;if(tile(P.x+dx*d,P.y+dy*d))return{d:d-2,hx:P.x+dx*d,hy:P.y+dy*d};}
+return{d:20*TS,hx:P.x,hy:P.y};}
+
+function title(){ctx.fillStyle="#010402";ctx.fillRect(0,0,800,500);
+if(ok(IMG.szobor)){ctx.globalAlpha=.35;ctx.drawImage(IMG.szobor,180,30,440,440);ctx.globalAlpha=1;}
+ctx.textAlign="center";ctx.fillStyle="#4f8";ctx.font="bold 52px monospace";
+ctx.fillText("👁 GREEN EYE 👁",400,150);
+ctx.fillStyle="#7c6";ctx.font="italic 19px monospace";
+ctx.fillText("The Serpent God is the Master of Your Fate",400,192);
+if(Math.floor(performance.now()/600)%2==0){ctx.fillStyle="#5f5";ctx.font="bold 18px monospace";
+ctx.fillText("[ Press ENTER to continue ]",400,460);}ctx.textAlign="left";}
+
+function menu(){ctx.fillStyle="#020603";ctx.fillRect(0,0,800,500);
+if(ok(IMG.fedlap)){ctx.globalAlpha=.2;ctx.drawImage(IMG.fedlap,0,0,800,500);ctx.globalAlpha=1;}
+ctx.textAlign="center";ctx.fillStyle="#3f6";ctx.font="bold 44px monospace";
+ctx.fillText("👁 GREEN EYE 👁",400,180);
+ctx.fillStyle="#9c9";ctx.font="15px monospace";
+ctx.fillText("WASD/arrows: move | left/right: turn | SPACE: attack | E: interact",400,290);
+if(Math.floor(performance.now()/500)%2==0){ctx.fillStyle="#5f5";ctx.font="bold 20px monospace";
+ctx.fillText("- Press ENTER to start -",400,400);}ctx.textAlign="left";}
+
+function view(){const FOV=Math.PI/3,N=200;
+ctx.fillStyle="#041207";ctx.fillRect(0,0,800,250);
+if(ok(IMG.padlo)){ctx.drawImage(IMG.padlo,0,250,800,250);
+ctx.fillStyle="rgba(0,20,5,.55)";ctx.fillRect(0,250,800,250);}
+else{ctx.fillStyle="#0a1a0d";ctx.fillRect(0,250,800,250);}
+const wi=ok(IMG.fal)?IMG.fal:null;
+for(let i=0;i<N;i++){const a=P.a-FOV/2+FOV*i/N,r=ray(a);
+const co=Math.max(.1,r.d*Math.cos(a-P.a)),h=Math.min(500,TS*300/co),y=(500-h)/2,sx=i*4;
+if(wi){let u;const fx=r.hx%TS,fy=r.hy%TS;u=(fx<3||fx>TS-3)?fy/TS:fx/TS;
+const tw=Math.max(1,wi.width/N*2),tx=Math.min(wi.width-tw,u*(wi.width-tw)|0);
+ctx.drawImage(wi,tx,0,tw,wi.height,sx,y,5,h);
+ctx.fillStyle=`rgba(0,10,3,${1-Math.max(0,1-r.d/(14*TS))})`;ctx.fillRect(sx,y,5,h);}
+else{const b=Math.max(0,1-r.d/(14*TS));
+ctx.fillStyle=`rgb(20+50∗b∣0,{20+50*b|0},20+50∗b∣0,{40+110*b|0},${25+60*b|0})`;ctx.fillRect(sx,y,5,h);}}
+const sp=E.map(e=>({x:e.x,y:e.y,e:e}));sp.push({x:4.5*TS,y:9.5*TS,e:{t:"statue"}});
+sp.sort((a,b)=>Math.hypot(b.x-P.x,b.y-P.y)-Math.hypot(a.x-P.x,a.y-P.y));
+for(const s of sp)sprite(s);
+ctx.fillStyle="rgba(0,25,8,.25)";ctx.fillRect(0,0,800,500);}
+
+function sprite(s){const dx=s.x-P.x,dy=s.y-P.y,d=Math.hypot(dx,dy);if(d<5)return;
+let a=Math.atan2(dy,dx)-P.a;while(a>Math.PI)a-=2*Math.PI;while(a<-Math.PI)a+=2*Math.PI;
+if(Math.abs(a)>Math.PI/2.2)return;
+const sx=(.5+a/(Math.PI/3))*800,h=Math.min(475,TS*300/(d*Math.cos(a))),w=h,y=(500-h)/2;
+let im,col;
+if(s.e.t=="statue"){im=IMG.szobor;col="#575";}
+else{im=eimg(s.e);col=ecol(s.e);}
+if(ok(im))ctx.drawImage(im,sx-w/2,y,w,h);
+else{ctx.fillStyle=col;ctx.fillRect(sx-w/4,y+h*.25,w/2,h*.75);
+ctx.fillStyle="#0f0";ctx.fillRect(sx-w/9,y+h*.14,w/12,h/20);ctx.fillRect(sx+w/36,y+h*.14,w/12,h/20);}}
+
+function hud(){ctx.fillStyle="rgba(0,0,0,.6)";ctx.fillRect(10,10,220,30);
+ctx.fillStyle="#400";ctx.fillRect(15,15,210,20);
+ctx.fillStyle="#0a0";ctx.fillRect(15,15,210*Math.max(0,P.hp)/100,20);
+ctx.fillStyle="#cfc";ctx.font="14px monospace";
+ctx.fillText("Zack ❤ "+Math.max(0,Math.ceil(P.hp)),20,30);
+if(performance.now()<msgT){ctx.fillStyle="rgba(0,15,5,.85)";ctx.fillRect(0,440,800,50);
+ctx.fillStyle="#9f9";ctx.font="15px monospace";ctx.fillText(msg,15,470);}
+ctx.fillStyle="#5f5";ctx.fillRect(399,242,2,6);ctx.fillRect(399,252,2,6);}
+
+function end(v){ctx.fillStyle=v?"rgba(0,30,10,.9)":"rgba(30,0,0,.9)";ctx.fillRect(0,0,800,500);
+ctx.textAlign="center";ctx.fillStyle=v?"#5f5":"#f55";ctx.font="bold 40px monospace";
+ctx.fillText(v?"🏆 VICTORY! 🏆":"💀 YOU ARE LOST... 💀",400,220);
+ctx.fillStyle="#9c9";ctx.font="16px monospace";
+ctx.fillText(v?"The Eye of the Serpent is yours! 👁️":"The Serpent God is the Master of Your Fate...",400,270);
+ctx.fillText("Press ENTER for menu",400,330);ctx.textAlign="left";}
+
+function upd(dt){const sp=120*dt/1000;let turn=0,f=0,s=0;
+if(keys.ArrowLeft)turn--;if(keys.ArrowRight)turn++;
+if(keys.KeyW||keys.ArrowUp)f=1;if(keys.KeyS||keys.ArrowDown)f=-1;
+if(keys.KeyA)s=-1;if(keys.KeyD)s=1
+P.a+=turn*2.2*dt/1000;
+const dx=Math.cos(P.a),dy=Math.sin(P.a);
+let nx=P.x+(dx*f+dy*-s)*sp,ny=P.y+(dy*f+dx*s)*sp;
+if(free(nx,P.y))P.x=nx;if(free(P.x,ny))P.y=ny;
+for(const e of E){const d=Math.hypot(e.x-P.x,e.y-P.y);
+if(d>TS*0.7&&d<TS*8){const ex=(P.x-e.x)/d,ey=(P.y-e.y)/d;
+const nex=e.x+ex*e.sp*sp,ney=e.y+ey*e.sp*sp;
+if(free(nex,e.y))e.x=nex;if(free(e.x,ney))e.y=ney;}
+if(d<TS*0.8){P.hp-=e.dmg*dt/1000;
+if(P.hp<=0){P.hp=0;state="death";}}}
+if(cd>0)cd-=dt;}
+
+let last=performance.now();
+function loop(t){const dt=Math.min(50,t-last);last=t;
+if(state=="game")upd(dt);
+if(state=="title")title();
+else if(state=="menu")menu();
+else if(state=="game"){view();hud();}
+else if(state=="death"){view();end(false);}
+else if(state=="victory"){view();end(true);}
+requestAnimationFrame(loop);}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
+
+
